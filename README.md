@@ -266,3 +266,393 @@ Swap 설정
 ```
 
 </details>
+<details>
+  <summary>
+    <h2> Kubernetes 1장 2교시 - 설치 전 사전 설정과 containerd</h2>
+  </summary>
+
+
+## 1. 학습 목표
+
+Kubernetes Node에서 kubelet과 Container Runtime이 정상 동작하도록 Linux 환경을 준비한다.
+
+핵심 흐름:
+
+```text
+Swap 비활성화
+→ Kernel Module 준비
+→ Network sysctl 설정
+→ containerd 설치
+→ CRI 확인
+→ systemd cgroup 설정
+```
+
+---
+
+# 2. Swap 비활성화
+
+현재 kubelet 기본 설정에서는 Swap이 활성화되어 있으면 문제가 발생할 수 있으므로 학습 환경에서는 비활성화한다.
+
+현재 Swap 끄기:
+
+```bash
+sudo swapoff -a
+```
+
+확인:
+
+```bash
+swapon --show
+```
+
+재부팅 후 다시 활성화되지 않도록 `/etc/fstab`의 Swap 항목도 비활성화한다.
+
+핵심:
+
+```text
+Swap
+→ kubelet 실행 및 메모리 관리와 관련
+```
+
+---
+
+# 3. Kernel Module 준비
+
+사용한 Module:
+
+```text
+overlay
+br_netfilter
+```
+
+설정:
+
+```bash
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+```
+
+즉시 적용:
+
+```bash
+sudo modprobe overlay
+sudo modprobe br_netfilter
+```
+
+확인:
+
+```bash
+lsmod | grep overlay
+lsmod | grep br_netfilter
+```
+
+역할:
+
+```text
+overlay
+→ Container Image Layer/FileSystem 처리
+
+br_netfilter
+→ Bridge를 지나는 Pod Network Traffic 처리
+```
+
+---
+
+# 4. Network Kernel 설정
+
+Kubernetes에서 Node가 Pod Traffic을 전달할 수 있도록 설정한다.
+
+```bash
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+```
+
+적용:
+
+```bash
+sudo sysctl --system
+```
+
+확인:
+
+```bash
+sysctl net.ipv4.ip_forward
+sysctl net.bridge.bridge-nf-call-iptables
+```
+
+정상 값:
+
+```text
+net.ipv4.ip_forward = 1
+net.bridge.bridge-nf-call-iptables = 1
+```
+
+핵심:
+
+```text
+ip_forward
+→ Node가 Packet을 다른 Network로 전달
+
+bridge-nf-call-iptables
+→ Bridge Traffic이 iptables/netfilter 처리를 받도록 설정
+```
+
+---
+
+# 5. containerd 설치
+
+Kubernetes는 Container를 직접 실행하지 않는다.
+
+구조:
+
+```text
+Kubernetes
+ ↓
+kubelet
+ ↓
+CRI
+ ↓
+containerd
+ ↓
+runc
+ ↓
+Linux Kernel
+```
+
+설치:
+
+```bash
+sudo apt update
+sudo apt install -y containerd
+```
+
+버전 확인:
+
+```bash
+containerd --version
+```
+
+실습 환경:
+
+```text
+containerd 2.2.1
+```
+
+Service 확인:
+
+```bash
+sudo systemctl status containerd
+```
+
+---
+
+# 6. CRI
+
+CRI는 `Container Runtime Interface`의 약자다.
+
+```text
+kubelet
+ ↕
+CRI
+ ↕
+containerd
+```
+
+즉 kubelet과 Container Runtime 사이의 표준 인터페이스이다.
+
+CRI Plugin 확인:
+
+```bash
+sudo ctr plugins ls | grep cri
+```
+
+---
+
+# 7. cgroup
+
+cgroup은 Linux에서 Process의 CPU, Memory 등의 자원을 관리하는 기능이다.
+
+구조:
+
+```text
+Kubernetes
+ ↓
+kubelet
+ ↓
+containerd
+ ↓
+cgroup
+ ↓
+Linux Kernel
+```
+
+나중에 사용하는:
+
+```yaml
+resources:
+  requests:
+  limits:
+```
+
+도 결국 Linux cgroup과 연결된다.
+
+---
+
+# 8. systemd cgroup 설정
+
+kubelet과 containerd의 cgroup driver를 맞추기 위해 `systemd` 방식을 사용한다.
+
+containerd 설정 생성:
+
+```bash
+sudo mkdir -p /etc/containerd
+
+containerd config default | \
+sudo tee /etc/containerd/config.toml > /dev/null
+```
+
+확인:
+
+```bash
+grep -n "SystemdCgroup" /etc/containerd/config.toml
+```
+
+설정:
+
+```text
+SystemdCgroup = true
+```
+
+변경 후:
+
+```bash
+sudo systemctl restart containerd
+sudo systemctl enable containerd
+```
+
+확인:
+
+```bash
+sudo systemctl is-active containerd
+```
+
+정상:
+
+```text
+active
+```
+
+---
+
+# 9. containerd 2.x
+
+현재 환경:
+
+```text
+containerd 2.2.1
+```
+
+containerd 2.x에서는 설정 형식이 1.x와 다를 수 있으므로 인터넷의 오래된 설치 문서를 그대로 따라가지 않고 현재 버전에 맞는 설정을 확인해야 한다.
+
+핵심:
+
+```text
+버전 확인
+→ 설정 파일 확인
+→ SystemdCgroup 확인
+→ CRI Plugin 확인
+```
+
+---
+
+# 10. 이번 교시 핵심 구조
+
+```text
+Swap
+→ kubelet 동작 조건
+
+overlay
+→ Container Filesystem
+
+br_netfilter
+→ Bridge Network 처리
+
+ip_forward
+→ Packet Forwarding
+
+containerd
+→ Container Runtime
+
+CRI
+→ kubelet과 Runtime 사이 인터페이스
+
+cgroup
+→ CPU / Memory 자원 관리
+
+systemd cgroup
+→ kubelet과 containerd의 자원 관리 방식 통일
+```
+
+---
+
+# 11. 검증 명령어
+
+```bash
+swapon --show
+```
+
+→ 출력 없음
+
+```bash
+sysctl net.ipv4.ip_forward
+```
+
+→ `1`
+
+```bash
+sysctl net.bridge.bridge-nf-call-iptables
+```
+
+→ `1`
+
+```bash
+containerd --version
+```
+
+→ containerd 버전 확인
+
+```bash
+grep -n "SystemdCgroup" /etc/containerd/config.toml
+```
+
+→ `true`
+
+```bash
+sudo systemctl is-active containerd
+```
+
+→ `active`
+
+---
+
+# 2교시 핵심 한 줄
+
+```text
+Kubernetes를 설치하기 전에
+Linux Network / Container Runtime / cgroup 환경을 먼저 준비한다.
+```
+
+### 다음 교시
+
+```text
+kubeadm
+kubelet
+kubectl
+설치
+→ Control Plane 초기화
+```
+</details>
