@@ -1006,3 +1006,383 @@ Flannel CNI 설치
 </details>
 
 
+
+
+<details>
+
+  <summary>
+    <h2>
+      4교시 - CNI 설치와 Worker Join  
+    </h2>
+    
+  </summary>
+## 1. 학습 목표
+
+이번 교시에서는 Kubernetes Cluster에 Pod Network를 구성하고 Worker Node를 Cluster에 Join했다.
+
+최종 목표:
+
+```text
+control-plane   Ready
+worker1         Ready
+worker2         Ready
+```
+
+---
+
+# 2. CNI란?
+
+CNI는 `Container Network Interface`의 약자다.
+
+Kubernetes Pod들이 서로 통신할 수 있도록 Pod Network를 구성한다.
+
+```text
+Pod A
+ ↓
+CNI
+ ↓
+Pod Network
+ ↓
+Pod B
+```
+
+이번 실습에서는 `Flannel`을 사용했다.
+
+---
+
+# 3. Flannel 설치
+
+Control Plane에서:
+
+```bash
+kubectl apply -f \
+https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+```
+
+확인:
+
+```bash
+kubectl get pods -n kube-flannel -o wide
+```
+
+Flannel은 DaemonSet 방식으로 각 Node에 하나씩 실행된다.
+
+```text
+control-plane → Flannel Pod
+worker1       → Flannel Pod
+worker2       → Flannel Pod
+```
+
+---
+
+# 4. CNI 설치 전/후 변화
+
+CNI 설치 전:
+
+```text
+Node      → NotReady
+CoreDNS   → Pending
+```
+
+Flannel 설치 후:
+
+```text
+Pod Network 생성
+ ↓
+CoreDNS Running
+ ↓
+Node Ready
+```
+
+실제 CoreDNS Pod IP도 `10.244.x.x` 대역을 사용했다.
+
+---
+
+# 5. Worker Join
+
+Control Plane에서 Join 명령 확인:
+
+```bash
+kubeadm token create --print-join-command
+```
+
+Worker에서 실행:
+
+```bash
+sudo kubeadm join 192.168.111.150:6443 \
+  --token <TOKEN> \
+  --discovery-token-ca-cert-hash sha256:<HASH>
+```
+
+개념:
+
+```text
+kubeadm init
+= Cluster 생성
+
+kubeadm join
+= 기존 Cluster에 Node 가입
+```
+
+---
+
+# 6. Join 과정
+
+```text
+Worker
+ ↓
+API Server :6443 접속
+ ↓
+Bootstrap Token 인증
+ ↓
+Control Plane 확인
+ ↓
+kubelet 설정
+ ↓
+Node 등록
+```
+
+---
+
+# 7. Node 상태 확인
+
+Control Plane에서:
+
+```bash
+kubectl get nodes -o wide
+```
+
+최종 결과:
+
+```text
+control-plane   Ready
+worker1         Ready
+worker2         Ready
+```
+
+환경:
+
+```text
+control-plane   192.168.111.150
+worker1         192.168.111.152
+worker2         192.168.111.151
+```
+
+모든 Node에서:
+
+```text
+Kubernetes   v1.37.1
+containerd   2.2.1
+```
+
+을 사용했다.
+
+---
+
+# 8. kube-system 확인
+
+```bash
+kubectl get pods -n kube-system -o wide
+```
+
+주요 Component:
+
+```text
+CoreDNS
+etcd
+kube-apiserver
+kube-controller-manager
+kube-scheduler
+kube-proxy
+```
+
+모두 정상적으로 `Running` 상태임을 확인했다.
+
+`kube-proxy`는 각 Node마다 실행된다.
+
+```text
+control-plane → kube-proxy
+worker1       → kube-proxy
+worker2       → kube-proxy
+```
+
+---
+
+# 9. Flannel 확인
+
+```bash
+kubectl get pods -n kube-flannel -o wide
+```
+
+각 Node마다 Flannel Pod가 하나씩 실행된다.
+
+```text
+Node 3대
+ ↓
+Flannel Pod 3개
+```
+
+이 구조는 DaemonSet의 대표적인 사용 예이다.
+
+---
+
+# 10. Node Network와 Pod Network
+
+## Node Network
+
+VM 자체 IP:
+
+```text
+control-plane   192.168.111.150
+worker1         192.168.111.152
+worker2         192.168.111.151
+```
+
+## Pod Network
+
+```text
+10.244.0.0/16
+```
+
+구분:
+
+```text
+192.168.111.x
+= Node 간 통신
+
+10.244.x.x
+= Pod 간 통신
+```
+
+---
+
+# 11. Worker에서 kubectl 오류
+
+Worker에서 다음 명령을 실행했을 때:
+
+```bash
+kubectl get pods
+```
+
+다음 오류가 발생했다.
+
+```text
+http://localhost:8080
+connect: connection refused
+```
+
+원인:
+
+```text
+Worker 일반 사용자에게
+kubeconfig가 없음
+ ↓
+kubectl이 API Server 위치를 모름
+```
+
+Cluster 장애가 아니라 `kubectl` 접속정보 문제였다.
+
+현재 실습에서는 관리 명령을 Control Plane에서 실행한다.
+
+---
+
+# 12. 장애 확인 순서
+
+Node가 `NotReady`인 경우:
+
+```text
+kubectl get nodes
+ ↓
+kubectl describe node <node>
+ ↓
+CNI Pod 확인
+ ↓
+Events / Logs 확인
+```
+
+Flannel 확인:
+
+```bash
+kubectl get pods -n kube-flannel -o wide
+```
+
+Worker Join 문제 시:
+
+```text
+Control Plane IP 확인
+API Server 6443 통신 확인
+Token 확인
+containerd 확인
+kubelet 확인
+Swap 확인
+```
+
+---
+
+# 13. 최종 Cluster 구조
+
+```text
+                 control-plane
+                192.168.111.150
+                       │
+                  API Server
+                       │
+          ┌────────────┴────────────┐
+          │                         │
+       worker1                   worker2
+  192.168.111.152          192.168.111.151
+          │                         │
+      Flannel CNI               Flannel CNI
+          │                         │
+        Pod                       Pod
+```
+
+---
+
+# 14. 1장 전체 흐름
+
+```text
+1교시
+VM / OS / CPU / RAM / Network 점검
+
+2교시
+Swap / Kernel / sysctl / containerd / CRI / cgroup
+
+3교시
+kubeadm / kubelet / kubectl
+→ Control Plane 초기화
+
+4교시
+Flannel CNI
+→ Worker Join
+→ 3-Node Cluster 완성
+```
+
+---
+
+# 4교시 핵심 한 줄
+
+```text
+CNI로 Pod Network를 구성하고,
+Worker Node를 Join하여 3-Node Kubernetes Cluster를 완성했다.
+```
+
+# 1장 완료
+
+```text
+control-plane   Ready
+worker1         Ready
+worker2         Ready
+```
+
+  
+</details>
+
+
+
+
+
+
+
+
+
