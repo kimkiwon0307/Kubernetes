@@ -268,7 +268,7 @@ Swap 설정
 </details>
 <details>
   <summary>
-    <h2> Kubernetes 1장 2교시 - 설치 전 사전 설정과 containerd</h2>
+    <h2> 1장 2교시 - 설치 전 사전 설정과 containerd</h2>
   </summary>
 
 
