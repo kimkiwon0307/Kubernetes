@@ -1374,6 +1374,7 @@ control-plane   Ready
 worker1         Ready
 worker2         Ready
 ```
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/4eafac99-78e9-4fd2-b378-c01c848b1979" />
 
   
 </details>
