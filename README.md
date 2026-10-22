@@ -656,3 +656,353 @@ kubectl
 → Control Plane 초기화
 ```
 </details>
+<details>
+  <summary>
+    <h2>1장 3교시 - kubeadm 설치와 Control Plane 초기화</h2>
+    
+  </summary>
+
+# Kubernetes 
+
+## 1. 핵심 도구
+
+```text
+kubeadm
+= Kubernetes Cluster 초기 구축 도구
+
+kubelet
+= 각 Node에서 Pod 실행을 관리하는 Agent
+
+kubectl
+= 사용자가 Kubernetes API Server에 명령을 보내는 CLI
+```
+
+구조:
+
+```text
+사용자
+ ↓
+kubectl
+ ↓
+API Server
+
+Node
+ ↓
+kubelet
+ ↓
+CRI
+ ↓
+containerd
+ ↓
+Container
+```
+
+---
+
+# 2. Kubernetes 패키지 설치
+
+세 Node 모두:
+
+```bash
+sudo apt-get update
+
+sudo apt-get install -y \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  gpg
+```
+
+Kubernetes Repository 등록 후:
+
+```bash
+sudo apt-get install -y kubelet kubeadm kubectl
+```
+
+버전 고정:
+
+```bash
+sudo apt-mark hold kubelet kubeadm kubectl
+```
+
+목적:
+
+```text
+일반 apt upgrade로
+Kubernetes 버전이 임의 변경되는 것을 방지
+```
+
+---
+
+# 3. Control Plane 초기화
+
+Control Plane에서만 실행:
+
+```bash
+sudo kubeadm init \
+  --apiserver-advertise-address=192.168.111.150 \
+  --pod-network-cidr=10.244.0.0/16 \
+  --cri-socket=unix:///run/containerd/containerd.sock
+```
+
+핵심 옵션:
+
+```text
+--apiserver-advertise-address
+= API Server가 사용할 Node IP
+
+--pod-network-cidr
+= Pod가 사용할 Network 대역
+
+--cri-socket
+= 사용할 Container Runtime의 CRI Socket
+```
+
+---
+
+# 4. kubeadm init이 하는 일
+
+```text
+Preflight Check
+ ↓
+인증서 생성
+ ↓
+kubeconfig 생성
+ ↓
+etcd 구성
+ ↓
+API Server 구성
+ ↓
+Controller Manager 구성
+ ↓
+Scheduler 구성
+ ↓
+kubelet 설정
+ ↓
+Worker Join용 Token 생성
+```
+
+---
+
+# 5. Static Pod
+
+Control Plane 핵심 Component들은 Static Pod 형태로 실행된다.
+
+Manifest 위치:
+
+```bash
+sudo ls /etc/kubernetes/manifests/
+```
+
+확인한 파일:
+
+```text
+etcd.yaml
+kube-apiserver.yaml
+kube-controller-manager.yaml
+kube-scheduler.yaml
+```
+
+동작 구조:
+
+```text
+/etc/kubernetes/manifests
+ ↓
+kubelet이 감시
+ ↓
+containerd에 실행 요청
+ ↓
+Control Plane Component 실행
+```
+
+핵심:
+
+```text
+kubeadm
+= 처음 구성
+
+kubelet
+= 계속 감시하고 실행 상태 유지
+```
+
+---
+
+# 6. kubectl 설정
+
+관리자 kubeconfig:
+
+```text
+/etc/kubernetes/admin.conf
+```
+
+일반 사용자에서 kubectl을 사용하기 위해:
+
+```bash
+mkdir -p $HOME/.kube
+
+sudo cp -i /etc/kubernetes/admin.conf \
+  $HOME/.kube/config
+
+sudo chown $(id -u):$(id -g) \
+  $HOME/.kube/config
+```
+
+`kubeconfig`는 kubectl이 Cluster에 접속하기 위한 정보 파일이다.
+
+```text
+Cluster 주소
+인증 정보
+Context
+사용자 정보
+```
+
+등이 들어 있다.
+
+---
+
+# 7. 현재 Cluster 상태
+
+확인:
+
+```bash
+kubectl get nodes
+```
+
+결과:
+
+```text
+control-plane   NotReady
+```
+
+이 상태는 현재 정상이다.
+
+이유:
+
+```text
+CNI 미설치
+ ↓
+Pod Network 없음
+ ↓
+Node NotReady
+```
+
+---
+
+# 8. kube-system 확인
+
+```bash
+kubectl get pods -n kube-system -o wide
+```
+
+정상 실행:
+
+```text
+etcd
+kube-apiserver
+kube-controller-manager
+kube-scheduler
+kube-proxy
+```
+
+현재 Pending:
+
+```text
+CoreDNS
+```
+
+이유:
+
+```text
+CNI 없음
+ ↓
+Pod Network 없음
+ ↓
+CoreDNS Pending
+```
+
+---
+
+# 9. 현재 상태 요약
+
+```text
+Control Plane 구성      ✅
+API Server              ✅
+etcd                    ✅
+Scheduler               ✅
+Controller Manager      ✅
+kubelet                 ✅
+containerd              ✅
+kubectl 연결            ✅
+
+CNI                     ❌
+Worker Join             ❌
+```
+
+현재:
+
+```text
+Control Plane
+   ↓
+NotReady
+```
+
+다음 교시에서:
+
+```text
+Flannel CNI 설치
+ ↓
+Pod Network 생성
+ ↓
+CoreDNS Running
+ ↓
+Node Ready
+ ↓
+Worker Join
+```
+
+으로 이어진다.
+
+---
+
+# 10. 핵심 명령어
+
+```bash
+kubeadm version
+kubelet --version
+kubectl version --client
+```
+
+```bash
+kubectl cluster-info
+kubectl get nodes
+kubectl get pods -n kube-system -o wide
+```
+
+```bash
+sudo ls /etc/kubernetes/manifests/
+```
+
+---
+
+# 3교시 핵심 한 줄
+
+```text
+kubeadm init으로 Control Plane을 구성하고,
+kubelet이 Static Pod 형태의 핵심 Component를 실행·유지한다.
+```
+
+현재 `NotReady`와 `CoreDNS Pending`은 **CNI가 아직 없기 때문에 정상적인 중간 상태**이다.
+
+### 다음 교시
+
+```text
+Flannel CNI 설치
+→ CoreDNS Running
+→ Node Ready
+→ worker1 / worker2 Join
+→ 3-Node Cluster 완성
+```
+  
+</details>
+
+
