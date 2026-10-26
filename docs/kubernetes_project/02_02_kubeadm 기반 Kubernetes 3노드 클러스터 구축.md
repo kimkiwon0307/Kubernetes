@@ -347,3 +347,6 @@ Kubernetes에서 kubelet의 요청을 받아 컨테이너를 실제로 생성하
 - **Ready:** Node가 Kubernetes에서 정상적으로 사용 가능한 상태
 
 **2장 2교시 완료 기준:** Control Plane 1대와 Worker Node 2대가 모두 Ready이고, 테스트 Pod 배포 및 노드 배치가 정상적으로 검증된 상태.
+
+<img width="1055" height="1491" alt="image" src="https://github.com/user-attachments/assets/8a684971-9a03-41d6-9e9a-a8b4a37ef99d" />
+
