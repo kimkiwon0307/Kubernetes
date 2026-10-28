@@ -338,3 +338,6 @@ Deployment와 Pod 상태를 확인하고 Events와 로그를 분석한다. 원�
 **이번 교시 핵심 한 문장**
 
 > Kubernetes Deployment는 Rolling Update로 기존 Pod를 새 버전으로 점진적으로 교체하며, 배포에 문제가 발생하면 Rollback으로 이전 정상 배포 구성으로 되돌릴 수 있다.
+
+<img width="1312" height="1199" alt="image" src="https://github.com/user-attachments/assets/524b7be0-bdc3-45a9-8b7e-58c31152aa4b" />
+
