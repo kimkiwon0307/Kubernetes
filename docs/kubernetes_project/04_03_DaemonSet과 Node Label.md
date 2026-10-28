@@ -340,3 +340,6 @@ Pod가 아예 생성되지 않았다면 로그가 없을 수 있으므로 Daemon
 위 개념들을 보고 각각 무엇을 하는지 이해하고, Deployment와 DaemonSet처럼 비슷한 기술을 구분할 수 있으면 충분하다.
 
 명령어와 YAML은 반복 실습하면서 익히고, 설계와 장애 대응은 후속 통합 프로젝트에서 더 깊게 학습한다.
+
+<img width="1312" height="1199" alt="image" src="https://github.com/user-attachments/assets/b9ca57e0-584a-4626-98df-bd86edd0c461" />
+
