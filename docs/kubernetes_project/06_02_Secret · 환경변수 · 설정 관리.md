@@ -475,3 +475,6 @@ Pod 상태와 Events를 확인하고, 참조한 Secret의 이름·키·Namespace
 - 전체 강의 진도: **14/26교시 (53.8%)**
 - 실제 실습 수행 및 성공 여부: 별도 검증 필요
 - 다음 수업: **6장 3교시 — ServiceAccount · RBAC · 권한 관리**
+
+<img width="1312" height="1199" alt="image" src="https://github.com/user-attachments/assets/cbe09a8a-45e7-4f22-87bf-feb4a9a87fa6" />
+
