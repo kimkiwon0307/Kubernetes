@@ -466,4 +466,9 @@ ConfigMap은 일반 설정값을, Secret은 비밀번호나 토큰 같은 민감
 
 > Namespace는 Kubernetes 리소스를 논리적으로 구분하고, ConfigMap은 애플리케이션 설정값을 컨테이너 이미지와 분리하여 환경별로 관리할 수 있도록 하는 리소스이다.
 
+
+<img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/037c2fa2-e230-495d-b880-8bfc7ba864cd" />
+
+
+
 <img width="935" height="1683" alt="image" src="https://github.com/user-attachments/assets/a5f6d922-82a0-490d-858f-84cc4783d9a9" />
