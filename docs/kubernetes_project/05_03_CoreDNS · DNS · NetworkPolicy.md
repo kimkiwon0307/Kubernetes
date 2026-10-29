@@ -458,3 +458,6 @@ Pod Label과 정책 설정을 확인하고, NetworkPolicy를 실제로 적용하
 **5장 전체 핵심 한 문장**
 
 > Kubernetes에서는 Service로 Pod에 안정적으로 접근하고, NodePort·LoadBalancer·Ingress로 외부 접속을 구성하며, CoreDNS로 이름을 해석하고 NetworkPolicy로 네트워크 통신을 제어한다.
+
+<img width="1122" height="1402" alt="image" src="https://github.com/user-attachments/assets/6801734b-8a10-46ed-ac0b-60501603e4be" />
+
