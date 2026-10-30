@@ -1,4 +1,4 @@
-# Kubernetes 프로젝트 학습
+<img width="724" height="2172" alt="image" src="https://github.com/user-attachments/assets/ee7a418f-6e02-4edd-9b20-9d5b8fc696ea" /># Kubernetes 프로젝트 학습
 
 ## 6장 3교시 — ServiceAccount · RBAC · 권한 관리
 
@@ -626,3 +626,8 @@ ServiceAccount, Role, RoleBinding, Namespace의 연결 상태를 확인한 뒤 `
 - 다음 수업: **7장 1교시 — PV · PVC · 데이터 영구 저장**
 
   <img width="1122" height="1402" alt="image" src="https://github.com/user-attachments/assets/8df2a31c-2e8c-4286-a848-7a493fab4f56" />
+
+
+
+  <img width="724" height="2172" alt="image" src="https://github.com/user-attachments/assets/4ec7e1df-599d-456d-8db5-e058fff4ff4b" />
+
