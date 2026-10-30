@@ -713,3 +713,6 @@ MySQL Pod가 삭제되거나 재생성되더라도 데이터 파일을 별도 �
 - 남은 강의: **10교시**
 - 실제 PV/PVC 연결과 데이터 유지 실습 성공 여부: 별도 확인 필요
 - 다음 교시: **7장 2교시 — StorageClass · StatefulSet · MySQL 운영**
+
+- <img width="1055" height="1491" alt="image" src="https://github.com/user-attachments/assets/2373dcdf-584d-4d37-8694-7610b32d0a8f" />
+
