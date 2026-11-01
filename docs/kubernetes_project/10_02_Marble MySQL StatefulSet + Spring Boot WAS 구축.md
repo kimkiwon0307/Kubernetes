@@ -2,7 +2,7 @@
 
 ## 10장 2교시 — Marble MySQL StatefulSet + Spring Boot WAS 구축
 
-### 1. 이번 교시의 목표
+### 1. 이번 교시의 목표 
 
 기존 VM에서 운영하던 Marble Spring Boot와 MySQL을 Kubernetes 환경으로 전환한다.
 
